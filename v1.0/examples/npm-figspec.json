@@ -1,0 +1,36 @@
+{
+	"files": [
+		{ "path": "node_modules/@figspec/components/esm/es2019/index.js" },
+		{
+			"path": "node_modules/@figspec/components/esm/es2019/FigspecFrameViewer.js"
+		},
+		{
+			"path": "node_modules/@figspec/components/esm/es2019/FigspecFileViewer.js"
+		}
+	],
+	"copyrights": [
+		{
+			"text": "Copyright (c) 2020 Shota Fuji",
+			"year": "2020",
+			"holders": [
+				{ "name": "Shota Fuji" }
+			]
+		}
+	],
+	"license": {
+		"type": "spdx",
+		"rawId": "MIT",
+		"expression": {
+			"id": "MIT",
+			"includes": [
+				{ "path": "node_modules/@figspec/components/LICENSE" }
+			]
+		}
+	},
+	"metadata": {
+		"npmjs.com": {
+			"packageName": "@figspec/components",
+			"version": "2.0.4"
+		}
+	}
+}

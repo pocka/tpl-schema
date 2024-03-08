@@ -1,0 +1,283 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://pocka.github.io/tpl/v1.0/tpl.schema.json",
+	"title": "TPL Line",
+	"description": "An individual line of TPL JSON Lines file.",
+	"type": "object",
+	"properties": {
+		"files": {
+			"description": "A list of files having same copyrights and license.",
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/FileRef"
+			},
+			"minItems": 1
+		},
+		"license": {
+			"description": "License for the files. This could be empty if a tool cannot detect a license for the files.",
+			"oneOf": [
+				{ "$ref": "#/$defs/SpdxLicense" },
+				{ "$ref": "#/$defs/ArbitraryLicense" }
+			]
+		},
+		"copyrights": {
+			"description": "Copyrights for the files. This could be empty if a tool cannot detect copyright information for the files. However, that does not mean the files have no copyrights.",
+			"type": "array",
+			"items": {
+				"$ref": "#/$defs/Copyright"
+			},
+			"minItems": 1
+		},
+		"metadata": {
+			"description": "Namespaced metadata used by tools. A tool may put or read a property or properties of this property. This schema does not define about namespace-collision: each tools should validate or parse metadata before reading.",
+			"type": "object"
+		}
+	},
+	"required": [
+		"files"
+	],
+	"$defs": {
+		"FileRef": {
+			"type": "object",
+			"properties": {
+				"path": {
+					"title": "Relative path",
+					"description": "Relative path to a file or directory from the project root directory.",
+					"type": "string",
+					"minLength": 1,
+					"examples": [
+						"LICENSE",
+						"./COPYING",
+						"LICENCE.txt",
+						"./LICENSES/GPL-3.0-or-later.txt"
+					]
+				}
+			},
+			"required": ["path"]
+		},
+		"IncludeItem": {
+			"oneOf": [
+				{ "$ref": "#/$defs/FileRef" },
+				{
+					"type": "object",
+					"properties": {
+						"text": {
+							"description": "Inlined text. This could be read file contents, or when the license text is part of a text file or remote content.",
+							"type": "string",
+							"examples": [
+								"Licensed under the Apache License, Version 2.0 (the \"License\");\n you may not use this file except in compliance with the License. ..."
+							]
+						}
+					},
+					"required": ["text"]
+				}
+			]
+		},
+		"SpdxLicense": {
+			"title": "SPDX conforming license",
+			"type": "object",
+			"properties": {
+				"type": {
+					"type": "string",
+					"const": "spdx"
+				},
+				"rawId": {
+					"title": "Raw SPDX ID string",
+					"description": "String of unparsed SPDX ID. This could be singular ID or compound expression.",
+					"type": "string",
+					"examples": [
+						"GPL-3.0-or-later",
+						"MIT OR Apache-2.0",
+						"AGPL-3.0-only OR (MIT AND LicenseRef-Acme-Custom)"
+					]
+				},
+				"expression": { "$ref": "#/$defs/Spdx2_3_CompoundExpression" },
+				"includes": {
+					"description": "License text or files to include. This is for cases such as a project has multiple license (AND/OR) but provides only single license file. How to produce/use this field is tool dependant.",
+					"type": "array",
+					"items": { "$ref": "#/$defs/IncludeItem" }
+				}
+			},
+			"required": ["type", "rawId", "expression"]
+		},
+		"Spdx2_3_CompoundExpression": {
+			"oneOf": [
+				{ "$ref": "#/$defs/Spdx2_3_SimpleExpression" },
+				{
+					"type": "object",
+					"properties": {
+						"conjunction": {
+							"type": "string",
+							"const": "WITH"
+						},
+						"license": { "$ref": "#/$defs/Spdx2_3_SimpleExpression" },
+						"exceptionId": {
+							"description": "Valid SPDX 2.3 License Exception Short Identifier.",
+							"type": "string",
+							"minLength": 1,
+							"examples": [
+								"LLVM-exception",
+								"GCC-exception-3.1"
+							]
+						},
+						"exceptionIncludes": {
+							"description": "License exception text or files to include.",
+							"type": "array",
+							"items": { "$ref": "#/$defs/IncludeItem" }
+						}
+					},
+					"required": [
+						"conjunction",
+						"license",
+						"exceptionId",
+						"exceptionIncludes"
+					]
+				},
+				{
+					"type": "object",
+					"properties": {
+						"conjunction": {
+							"type": "string",
+							"enum": ["AND", "OR"]
+						},
+						"left": { "$ref": "#/$defs/Spdx2_3_CompoundExpression" },
+						"right": { "$ref": "#/$defs/Spdx2_3_CompoundExpression" }
+					},
+					"required": ["conjunction", "left", "right"]
+				}
+			]
+		},
+		"Spdx2_3_SimpleExpression": {
+			"oneOf": [
+				{ "$ref": "#/$defs/Spdx2_3_License" },
+				{ "$ref": "#/$defs/Spdx2_3_LicenseRef" }
+			]
+		},
+		"Spdx2_3_License": {
+			"type": "object",
+			"properties": {
+				"id": {
+					"description": "Valid SPDX 2.3 License Short Identifier.",
+					"type": "string",
+					"minLength": 1,
+					"examples": [
+						"MIT",
+						"GPL-3.0-or-later"
+					]
+				},
+				"includesLaterVersions": {
+					"description": "Whether to include later version of the license, represented by `+` suffix (e.g. CDDL-1.0+).",
+					"type": "boolean",
+					"default": false
+				},
+				"includes": {
+					"description": "License text or files to include.",
+					"type": "array",
+					"items": { "$ref": "#/$defs/IncludeItem" }
+				}
+			},
+			"required": ["id", "includes"]
+		},
+		"Spdx2_3_LicenseRef": {
+			"type": "object",
+			"properties": {
+				"licenseRef": {
+					"description": "idstring part of LicenseRef-(idstring).",
+					"type": "string",
+					"minLength": 1,
+					"examples": ["1", "Acme-Dummy"]
+				},
+				"documentRef": {
+					"description": "idstring part of DocumentRef-(idstring), if any.",
+					"type": "string",
+					"minLength": 1,
+					"examples": ["1", "Acme-Dummy"]
+				},
+				"includes": {
+					"description": "License text or files to include.",
+					"type": "array",
+					"items": { "$ref": "#/$defs/IncludeItem" }
+				}
+			},
+			"required": ["licenseRef", "includes"]
+		},
+		"ArbitraryLicense": {
+			"title": "Arbitrary license",
+			"description": "Free-form license, which does not conforming well-known license formats.",
+			"type": "object",
+			"properties": {
+				"type": {
+					"type": "string",
+					"const": "arbitrary"
+				},
+				"includes": {
+					"description": "License text or files to include.",
+					"type": "array",
+					"items": { "$ref": "#/$defs/IncludeItem" },
+					"minItems": 1
+				}
+			},
+			"required": ["type", "includes"]
+		},
+		"Copyright": {
+			"title": "Copyright info",
+			"type": "object",
+			"properties": {
+				"text": {
+					"description": "Original copyright text. Use of this field is recommended over `year` and `holders`.",
+					"type": "string",
+					"examples": [
+						"Copyright 2020 Alice <alice@example.com>",
+						"© Alice, Bob"
+					]
+				},
+				"year": {
+					"description": "The year part of the copyright text, only if a tool successfully parsed. This field is presented as plain text, because there is no standard format and people may use the field for various purpose. This field is only for programatically replacing license placeholders with.",
+					"type": "string",
+					"minLength": 1,
+					"examples": [
+						"2020",
+						"2020, 2020-2024",
+						"2020-2024"
+					]
+				},
+				"holders": {
+					"description": "A list of copyright holders. Could be empty in case a tool could not parse the text.",
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/CopyrightHolder"
+					},
+					"minItems": 1
+				}
+			},
+			"required": ["text"]
+		},
+		"CopyrightHolder": {
+			"title": "Copyright holder",
+			"description": "An individual or organization holding a copyright for the work.",
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"minLength": 1
+				},
+				"email": {
+					"type": "string",
+					"minLength": 1
+				}
+			},
+			"required": [
+				"name"
+			],
+			"examples": [
+				{
+					"name": "Alice",
+					"email": "alice@example.com"
+				},
+				{
+					"name": "Bob"
+				}
+			]
+		}
+	}
+}
